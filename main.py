@@ -27,12 +27,11 @@ class SearchEngine:
 
 	def __init__(self, args):
 		self.args = args
-
 		self.tokenizer = Tokenization()
 		self.sentenceSegmenter = SentenceSegmentation()
 		self.inflectionReducer = InflectionReduction()
 		self.stopwordRemover = StopwordRemoval()
-		self.informationRetriever = InformationRetrieval()
+		self.informationRetriever = InformationRetrieval(self.args.model, self.args.qex, self.args.dex, self.args.include_bigrams)
 		self.evaluator = Evaluation()
 
 
@@ -247,8 +246,16 @@ if __name__ == "__main__":
 	                    help = "Sentence Segmenter Type [naive|punkt]")
 	parser.add_argument('-tokenizer',  default = "ptb",
 	                    help = "Tokenizer Type [naive|ptb]")
+	parser.add_argument('-model', default= "tfidf", choices=['tfidf', 'lsa', 'hybrid', 'esa', 'nesa', 'bm25'], 
+                    help="Choose the model: 'tfidf', 'lsa', 'esa', or 'hybrid'")
+	parser.add_argument('-qex', default=False, action = "store_true",
+						help = "Use query expansion")
+	parser.add_argument('-dex', default=False, action = "store_true",
+						help = "Use document expansion")
 	parser.add_argument('-custom', action = "store_true", 
 						help = "Take custom query as input")
+	parser.add_argument('-include_bigrams', action="store_true",
+						help="Include bigrams in the TF-IDF model")
 	
 	# Parse the input arguments
 	args = parser.parse_args()
