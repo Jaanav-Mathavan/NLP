@@ -1,9 +1,9 @@
 from util import *
 from models.tfidf import TFIDF
 from models.lsa import LSA
-from models.wordnet import WordNetSimilarity
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+from models.sentence_tranformer import SentenceTransformerEmbedder
 
 class InformationRetrieval():
 
@@ -13,15 +13,19 @@ class InformationRetrieval():
         self.qex = qex
         self.dex = dex
         self.include_bigrams = include_bigrams
-        self.tfidf_model = TFIDF(self.qex, self.dex, self.include_bigrams) 
         self.lsa_model = LSA()
+        self.use_em = True if "embeddings" in self.model else False
         self.use_lsa = True if "lsa" in self.model else False
         self.use_wordnet = True if "wordnet" in self.model else False
+        if self.use_wordnet:
+            self.tfidf_model = TFIDF(self.qex, self.dex, self.include_bigrams, use_wn=True) 
+        else:
+            self.tfidf_model = TFIDF(self.qex, self.dex, self.include_bigrams) 
         self.docIDs = None
+        if self.use_em:
+            self.st_model = SentenceTransformerEmbedder()
         self.docID_to_idx = {}
         self.idx_to_docID = {}
-        if self.use_wordnet:
-            self.wordnet_sim = None
             
     def buildIndex(self, docs, docIDs):
         """
@@ -60,12 +64,11 @@ class InformationRetrieval():
             
         self.compute_tf_idf_matrix(flattened_docs)
         
-        if self.use_wordnet:
-            self.wordnet_sim = WordNetSimilarity(list(self.tfidf_model.get_words()))
-            self.wordnet_sim.build_similarity_matrix()
-        
         if self.use_lsa:
             self.compute_lsa_matrix(self.tfidf_model.get_doc_matrix())
+            
+        if self.use_em:
+            self.compute_st_matrix(flattened_docs)
 
     def compute_tf_idf_matrix(self, flattened_docs, docIDs=None):
         """
@@ -103,6 +106,24 @@ class InformationRetrieval():
         """
         self.lsa_model.fit(doc_matrix)
         
+    def compute_st_matrix(self, flattened_docs):
+        """
+        Computes the Word2Vec matrix for the documents
+
+        Parameters
+        ----------
+        arg1 : list
+            A list of lists of lists where each sub-list is a document and
+            each sub-sub-list is a sentence of the document
+
+        Returns
+        -------
+        list
+            A list of lists of floats where the ith sub-list is a list of Word2Vec
+            values for the ith document
+        """
+        self.st_model.fit(flattened_docs)
+        
     def rank(self, queries):
         """
         Rank the documents according to relevance for each query
@@ -122,17 +143,17 @@ class InformationRetrieval():
         doc_IDs_ordered = []
 
         for query in queries:
-            words = [word for sentence in query for word in sentence]
+            words = [word for sentence in query for word in sentence if word in self.index]
             query_text = " ".join(words)
-            query_vector = self.tfidf_model.transform([query_text])
-            
-            if self.use_wordnet:
-                query_vector = self.wordnet_sim.transform(query_vector)
-                
-            if self.use_lsa:
+            if self.use_em:
+                query_text = " ".join([word for sentence in query for word in sentence])
+                query_vector = self.st_model.transform([query_text])
+                similarity_scores = cosine_similarity(self.st_model.get_doc_matrix(), query_vector).flatten()    
+            elif self.use_lsa:
                 query_vector = self.lsa_model.transform(query_vector)
                 similarity_scores = cosine_similarity(self.lsa_model.get_doc_matrix(), query_vector).flatten()
             else:
+                query_vector = self.tfidf_model.transform([query_text])
                 similarity_scores = cosine_similarity(self.tfidf_model.get_doc_matrix(), query_vector).flatten()
 
             relevant_docs = set()
