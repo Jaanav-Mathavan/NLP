@@ -97,6 +97,7 @@ class TFIDF:
         for query in queries:
             expanded_query = []
             for word in query.split():
+<<<<<<< HEAD
                 expanded_query.append(word)  
                 if wordnet.synsets(word):
                     synonyms = set()
@@ -106,6 +107,11 @@ class TFIDF:
                             if synonym in self.words:  
                                 synonyms.add(synonym)
                     expanded_query.extend(synonyms)
+=======
+                expanded_query.append(word)
+                synonyms = self.get_synonyms(word)
+                expanded_query.extend([s for s in synonyms if s in self.words])
+>>>>>>> 46b8c50 (.)
             expanded_queries.append(" ".join(expanded_query))
         return expanded_queries
 
@@ -114,6 +120,7 @@ class TFIDF:
         for doc in documents:
             expanded_doc = []
             for word in doc.split():
+<<<<<<< HEAD
                 expanded_doc.append(word)  
                 if wordnet.synsets(word):
                     synonyms = set()
@@ -125,3 +132,18 @@ class TFIDF:
                     expanded_doc.extend(synonyms)
             expanded_documents.append(" ".join(expanded_doc))
         return expanded_documents
+=======
+                expanded_doc.append(word)
+                synonyms = self.get_synonyms(word)
+                expanded_doc.extend([s for s in synonyms if s in vocab])
+            expanded_documents.append(" ".join(expanded_doc))
+        return expanded_documents
+
+    def get_synonyms(self, word):
+        synonyms = set()
+        for syn in wordnet.synsets(word):
+            for lemma in syn.lemmas():
+                synonym = lemma.name().replace("_", " ")
+                synonyms.add(synonym)
+        return synonyms
+>>>>>>> 46b8c50 (.)
