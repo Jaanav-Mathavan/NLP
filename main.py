@@ -247,11 +247,7 @@ if __name__ == "__main__":
 	                    help = "Sentence Segmenter Type [naive|punkt]")
 	parser.add_argument('-tokenizer',  default = "ptb",
 	                    help = "Tokenizer Type [naive|ptb]")
-<<<<<<< HEAD
-	parser.add_argument('-model', default= "tfidf", choices=['tfidf', 'lsa', 'hybrid', 'esa', 'nesa', 'bm25'], 
-=======
 	parser.add_argument('-model', default= "tfidf", choices=['tfidf', 'lsa', 'hybrid', 'esa', 'nesa', 'bm25', 'wordnet_tfidf', 'wordnet_lsa', 'wordnet_esa', 'wordnet_hybrid', 'embeddings'], 
->>>>>>> 46b8c50 (.)
                     help="Choose the model: 'tfidf', 'lsa', 'esa', or 'hybrid'")
 	parser.add_argument('-qex', default=False, action = "store_true",
 						help = "Use query expansion")
