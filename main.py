@@ -27,12 +27,11 @@ class SearchEngine:
 
 	def __init__(self, args):
 		self.args = args
-
 		self.tokenizer = Tokenization()
 		self.sentenceSegmenter = SentenceSegmentation()
 		self.inflectionReducer = InflectionReduction()
 		self.stopwordRemover = StopwordRemoval()
-		self.informationRetriever = InformationRetrieval()
+		self.informationRetriever = InformationRetrieval(self.args.model, self.args.qex, self.args.dex, self.args.include_bigrams)
 		self.evaluator = Evaluation()
 
 
@@ -166,8 +165,9 @@ class SearchEngine:
 		qrels = json.load(open(args.dataset + "cran_qrels.json", 'r'))[:]
 
 		# Calculate precision, recall, f-score, MAP and nDCG for k = 1 to 10
+		rank=20
 		precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
-		for k in range(1, 11):
+		for k in range(1, rank+1):
 			precision = self.evaluator.meanPrecision(
 				doc_IDs_ordered, query_ids, qrels, k)
 			precisions.append(precision)
@@ -190,11 +190,11 @@ class SearchEngine:
 				str(k) + " : " + str(MAP) + ", " + str(nDCG))
 
 		# Plot the metrics and save plot 
-		plt.plot(range(1, 11), precisions, label="Precision")
-		plt.plot(range(1, 11), recalls, label="Recall")
-		plt.plot(range(1, 11), fscores, label="F-Score")
-		plt.plot(range(1, 11), MAPs, label="MAP")
-		plt.plot(range(1, 11), nDCGs, label="nDCG")
+		plt.plot(range(1, rank+1), precisions, label="Precision")
+		plt.plot(range(1, rank+1), recalls, label="Recall")
+		plt.plot(range(1, rank+1), fscores, label="F-Score")
+		plt.plot(range(1, rank+1), MAPs, label="MAP")
+		plt.plot(range(1, rank+1), nDCGs, label="nDCG")
 		plt.legend()
 		plt.title("Evaluation Metrics - Cranfield Dataset")
 		plt.xlabel("k")
@@ -247,8 +247,16 @@ if __name__ == "__main__":
 	                    help = "Sentence Segmenter Type [naive|punkt]")
 	parser.add_argument('-tokenizer',  default = "ptb",
 	                    help = "Tokenizer Type [naive|ptb]")
+	parser.add_argument('-model', default= "tfidf", choices=['tfidf', 'lsa', 'hybrid', 'esa', 'nesa', 'bm25', 'wordnet_tfidf', 'wordnet_lsa', 'wordnet_esa', 'wordnet_hybrid', 'embeddings'], 
+                    help="Choose the model: 'tfidf', 'lsa', 'esa', or 'hybrid'")
+	parser.add_argument('-qex', default=False, action = "store_true",
+						help = "Use query expansion")
+	parser.add_argument('-dex', default=False, action = "store_true",
+						help = "Use document expansion")
 	parser.add_argument('-custom', action = "store_true", 
 						help = "Take custom query as input")
+	parser.add_argument('-include_bigrams', action="store_true",
+						help="Include bigrams in the TF-IDF model")
 	
 	# Parse the input arguments
 	args = parser.parse_args()
