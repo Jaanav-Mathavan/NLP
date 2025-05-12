@@ -63,7 +63,7 @@ class SearchEngine:
 
     def preprocessQueries(self, queries):
         os.makedirs(self.args.out_folder, exist_ok=True)
-		self.autocomplete.model.train(queries)
+        self.autocomplete.model.train(queries)
         segmentedQueries = [self.segmentSentences(query) for query in queries]
         json.dump(segmentedQueries, open(self.args.out_folder + "segmented_queries.txt", 'w'))
         tokenizedQueries = [self.tokenize(query) for query in segmentedQueries]
