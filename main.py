@@ -5,7 +5,6 @@ from stopwordRemoval import StopwordRemoval
 from esa import ExplicitSemanticAnalysis
 from informationRetrieval import InformationRetrieval
 from models.BM25 import IR_BM25
-from esa import ExplicitSemanticAnalysis
 from evaluation import Evaluation
 from models.autocomplete import Autocomplete
 from models.autocomplete import Autocomplete
