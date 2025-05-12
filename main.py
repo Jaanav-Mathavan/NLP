@@ -2,7 +2,8 @@ from sentenceSegmentation import SentenceSegmentation
 from tokenization import Tokenization
 from inflectionReduction import InflectionReduction
 from stopwordRemoval import StopwordRemoval
-from informationRetrieval import InformationRetrieval
+# from informationRetrieval import InformationRetrieval
+from models.BM25 import IR_BM25
 from evaluation import Evaluation
 import os
 from sys import version_info
@@ -32,7 +33,7 @@ class SearchEngine:
 		self.sentenceSegmenter = SentenceSegmentation()
 		self.inflectionReducer = InflectionReduction()
 		self.stopwordRemover = StopwordRemoval()
-		self.informationRetriever = InformationRetrieval()
+		self.informationRetriever = IR_BM25()
 		self.evaluator = Evaluation()
 
 
