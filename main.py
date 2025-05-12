@@ -4,6 +4,7 @@ from inflectionReduction import InflectionReduction
 from stopwordRemoval import StopwordRemoval
 from informationRetrieval import InformationRetrieval
 from evaluation import Evaluation
+from models.autocomplete import Autocomplete
 import os
 from sys import version_info
 import argparse
@@ -33,6 +34,7 @@ class SearchEngine:
 		self.stopwordRemover = StopwordRemoval()
 		self.informationRetriever = InformationRetrieval(self.args.model, self.args.qex, self.args.dex, self.args.include_bigrams)
 		self.evaluator = Evaluation()
+		self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
 
 
 	def segmentSentences(self, text):
@@ -71,6 +73,7 @@ class SearchEngine:
 		Preprocess the queries - segment, tokenize, stem/lemmatize and remove stopwords
 		"""
 		os.makedirs(self.args.out_folder, exist_ok=True)
+		self.autocomplete.model.train(queries)
 		# Segment queries
 		segmentedQueries = []
 		for query in queries:
@@ -211,6 +214,7 @@ class SearchEngine:
 		query = input()
 		custom_start_time = time.time()
 		# Process documents
+		query = self.autocomplete.complete(query)
 		processedQuery = self.preprocessQueries([query])[0]
 
 		# Read documents
@@ -257,6 +261,11 @@ if __name__ == "__main__":
 						help = "Take custom query as input")
 	parser.add_argument('-include_bigrams', action="store_true",
 						help="Include bigrams in the TF-IDF model")
+	parser.add_argument('-autocomplete',default= "Ngram", choices=['Ngram', 'tries'], 
+						help="Autocomplete Queries")
+	parser.add_argument('-Ngram',default=3, choices=[2,3,4,5], 
+						help="Ngram Model type")
+	
 	
 	# Parse the input arguments
 	args = parser.parse_args()
