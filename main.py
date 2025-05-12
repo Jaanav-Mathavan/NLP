@@ -44,7 +44,7 @@ class SearchEngine:
         elif args.model == "bm25":
             self.informationRetriever = IR_BM25()
         else:
-            self.informationRetriever = InformationRetrieval()
+            self.informationRetriever = InformationRetrieval(args.model, args.qex, args.dex, args.include_bigrams)
 
     def segmentSentences(self, text):
         if self.args.segmenter == "naive":
@@ -75,7 +75,6 @@ class SearchEngine:
         json.dump(reducedQueries, open(self.args.out_folder + "reduced_queries.txt", 'w'))
         stopwordRemovedQueries = [self.removeStopwords(query) for query in reducedQueries]
         json.dump(stopwordRemovedQueries, open(self.args.out_folder + "stopword_removed_queries.txt", 'w'))
-        print("Sample preprocessed query tokens:", stopwordRemovedQueries[0][:10])
         return stopwordRemovedQueries
 
     def preprocessDocs(self, docs):
@@ -87,7 +86,6 @@ class SearchEngine:
         json.dump(reducedDocs, open(self.args.out_folder + "reduced_docs.txt", 'w'))
         stopwordRemovedDocs = [self.removeStopwords(doc) for doc in reducedDocs]
         json.dump(stopwordRemovedDocs, open(self.args.out_folder + "stopword_removed_docs.txt", 'w'))
-        print("Sample preprocessed doc tokens:", stopwordRemovedDocs[0][:10])
         return stopwordRemovedDocs
 
     def evaluateDataset(self):
@@ -212,7 +210,7 @@ if __name__ == "__main__":
 						help = "Use query expansion")
 	parser.add_argument('-dex', default=False, action = "store_true",
 						help = "Use document expansion")
-	parser.add_argument('-model', default= "tfidf", choices=['tfidf', 'lsa', 'hybrid', 'esa', 'nesa', 'bm25', 'wordnet_tfidf', 'wordnet_lsa', 'wordnet_esa', 'wordnet_hybrid', 'embeddings'], 
+	parser.add_argument('-model', default= "tfidf", choices=['tfidf', 'lsa', 'esa', 'nesa', 'bm25', 'wordnet_tfidf', 'wordnet_lsa', 'wordnet_esa', 'wordnet_hybrid', 'embeddings'], 
                     help="Choose the model: 'tfidf', 'lsa', 'esa', or 'hybrid'")
 	parser.add_argument('-custom', action = "store_true", 
 						help = "Take custom query as input")
