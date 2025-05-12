@@ -245,7 +245,7 @@ class ExplicitSemanticAnalysis:
         print(f"ESA/NESA index build time: {time.time() - start_time:.2f} seconds")
         print(f"Indexed {len(self.doc_vectors)} documents into ESA/NESA vectors.")
 
-    def rank(self, queries, alpha=0.5, beta_prf=0, gamma_expansion=0, K_prf=0, M_prf=0):
+    def rank(self, queries, alpha=1, beta_prf=0, gamma_expansion=0, K_prf=0, M_prf=0):
         """
         Rank documents by relevance to each query using ESA or NESA with optional TF-IDF hybrid scoring
         and pseudo-relevance feedback.
