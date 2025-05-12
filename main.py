@@ -95,70 +95,110 @@ class SearchEngine:
 
         qrels = json.load(open(self.args.dataset + "cran_qrels.json", 'r'))[:]
 
-        # Debugging: Check ID consistency
-        print("Sample doc_id:", doc_ids[0], "Type:", type(doc_ids[0]))
-        print("Sample query_id:", query_ids[0], "Type:", type(query_ids[0]))
-        print("Sample qrels entry:", qrels[0])
-        doc_ids_set = set(doc_ids)
-        qrels_doc_ids = set(item['id'] for item in qrels)
-        print("Intersection of doc_ids and qrels:", len(doc_ids_set & qrels_doc_ids))
+		# Calculate precision, recall, f-score, MAP and nDCG for k = 1 to 10
+		rank=20
+		precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
+		for k in range(1, rank+1):
+			precision = self.evaluator.meanPrecision(
+				doc_IDs_ordered, query_ids, qrels, k)
+			precisions.append(precision)
+			recall = self.evaluator.meanRecall(
+				doc_IDs_ordered, query_ids, qrels, k)
+			recalls.append(recall)
+			fscore = self.evaluator.meanFscore(
+				doc_IDs_ordered, query_ids, qrels, k)
+			fscores.append(fscore)
+			print("Precision, Recall and F-score @ " +  
+				str(k) + " : " + str(precision) + ", " + str(recall) + 
+				", " + str(fscore))
+			MAP = self.evaluator.meanAveragePrecision(
+				doc_IDs_ordered, query_ids, qrels, k)
+			MAPs.append(MAP)
+			nDCG = self.evaluator.meanNDCG(
+				doc_IDs_ordered, query_ids, qrels, k)
+			nDCGs.append(nDCG)
+			print("MAP, nDCG @ " +  
+				str(k) + " : " + str(MAP) + ", " + str(nDCG))
 
-        precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
-        for k in range(1, 11):
-            precision = self.evaluator.meanPrecision(doc_IDs_ordered, query_ids, qrels, k)
-            precisions.append(precision)
-            recall = self.evaluator.meanRecall(doc_IDs_ordered, query_ids, qrels, k)
-            recalls.append(recall)
-            fscore = self.evaluator.meanFscore(doc_IDs_ordered, query_ids, qrels, k)
-            fscores.append(fscore)
-            print(f"Precision, Recall and F-score @ {k} : {precision}, {recall}, {fscore}")
-            MAP = self.evaluator.meanAveragePrecision(doc_IDs_ordered, query_ids, qrels, k)
-            MAPs.append(MAP)
-            nDCG = self.evaluator.meanNDCG(doc_IDs_ordered, query_ids, qrels, k)
-            nDCGs.append(nDCG)
-            print(f"MAP, nDCG @ {k} : {MAP}, {nDCG}")
+		# Plot the metrics and save plot 
+		plt.plot(range(1, rank+1), precisions, label="Precision")
+		plt.plot(range(1, rank+1), recalls, label="Recall")
+		plt.plot(range(1, rank+1), fscores, label="F-Score")
+		plt.plot(range(1, rank+1), MAPs, label="MAP")
+		plt.plot(range(1, rank+1), nDCGs, label="nDCG")
+		plt.legend()
+		plt.title("Evaluation Metrics - Cranfield Dataset")
+		plt.xlabel("k")
+		plt.savefig(args.out_folder + "eval_plot.png")
 
-        plt.plot(range(1, 11), precisions, label="Precision")
-        plt.plot(range(1, 11), recalls, label="Recall")
-        plt.plot(range(1, 11), fscores, label="F-Score")
-        plt.plot(range(1, 11), MAPs, label="MAP")
-        plt.plot(range(1, 11), nDCGs, label="nDCG")
-        plt.legend()
-        plt.title("Evaluation Metrics - Cranfield Dataset")
-        plt.xlabel("k")
-        plt.savefig(self.args.out_folder + "eval_plot.png")
+		
+	def handleCustomQuery(self):
+		"""
+		Take a custom query as input and return top five relevant documents
+		"""
 
-    def handleCustomQuery(self):
-        print("Enter query below")
-        query = input()
-        custom_start_time = time.time()
-        processedQuery = self.preprocessQueries([query])[0]
-        docs_json = json.load(open(self.args.dataset + "cran_docs.json", 'r'))[:]
-        doc_ids = [str(item["id"]) for item in docs_json]  # Ensure string IDs
-        docs = [item["body"] for item in docs_json]
-        processedDocs = self.preprocessDocs(docs)
-        self.informationRetriever.buildIndex(processedDocs, doc_ids)
-        doc_IDs_ordered = self.informationRetriever.rank([processedQuery])[0]
-        custom_end_time = time.time()
-        print("Custom Query Time taken : " + str(custom_end_time - custom_start_time) + " seconds")
-        print("\nTop five document IDs : ")
-        for id_ in doc_IDs_ordered[:5]:
-            print(id_)
+		#Get query
+		print("Enter query below")
+		query = input()
+		custom_start_time = time.time()
+		# Process documents
+		processedQuery = self.preprocessQueries([query])[0]
+
+		# Read documents
+		docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
+		doc_ids, docs = [item["id"] for item in docs_json], \
+							[item["body"] for item in docs_json]
+		# Process documents
+		processedDocs = self.preprocessDocs(docs)
+
+		# Build document index
+		self.informationRetriever.buildIndex(processedDocs, doc_ids)
+		# Rank the documents for the query
+		doc_IDs_ordered = self.informationRetriever.rank([processedQuery])[0]
+		custom_end_time = time.time()
+		print("Custom Query Time taken : " + str(custom_end_time - custom_start_time) + " seconds")
+		# Print the IDs of first five documents
+		print("\nTop five document IDs : ")
+		for id_ in doc_IDs_ordered[:5]:
+			print(id_)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='main.py')
-    parser.add_argument('-dataset', default="cranfield/", help="Path to the dataset folder")
-    parser.add_argument('-out_folder', default="output/", help="Path to output folder")
-    parser.add_argument('-segmenter', default="punkt", help="Sentence Segmenter Type [naive|punkt]")
-    parser.add_argument('-tokenizer', default="ptb", help="Tokenizer Type [naive|ptb]")
-    parser.add_argument('-custom', action="store_true", help="Take custom query as input")
-    parser.add_argument('-model', default="esa", help="IR model [esa|nesa|tfidf]")
-    args = parser.parse_args()
-    searchEngine = SearchEngine(args)
-    start_time = time.time()
-    if args.custom:
-        searchEngine.handleCustomQuery()
-    else:
-        searchEngine.evaluateDataset()
-        end_time = time.time()
-        print("Cranfield Query Dataset Time taken : " + str(end_time - start_time) + " seconds")
+
+	# Create an argument parser
+	parser = argparse.ArgumentParser(description='main.py')
+
+	# Tunable parameters as external arguments
+	parser.add_argument('-dataset', default = "cranfield/", 
+						help = "Path to the dataset folder")
+	parser.add_argument('-out_folder', default = "output/", 
+						help = "Path to output folder")
+	parser.add_argument('-segmenter', default = "punkt",
+	                    help = "Sentence Segmenter Type [naive|punkt]")
+	parser.add_argument('-tokenizer',  default = "ptb",
+	                    help = "Tokenizer Type [naive|ptb]")
+	parser.add_argument('-model', default= "tfidf", choices=['tfidf', 'lsa', 'hybrid', 'esa', 'nesa', 'bm25', 'wordnet_tfidf', 'wordnet_lsa', 'wordnet_esa', 'wordnet_hybrid', 'embeddings'], 
+                    help="Choose the model: 'tfidf', 'lsa', 'esa', or 'hybrid'")
+	parser.add_argument('-qex', default=False, action = "store_true",
+						help = "Use query expansion")
+	parser.add_argument('-dex', default=False, action = "store_true",
+						help = "Use document expansion")
+	parser.add_argument('-custom', action = "store_true", 
+						help = "Take custom query as input")
+	parser.add_argument('-include_bigrams', action="store_true",
+						help="Include bigrams in the TF-IDF model")
+	
+	# Parse the input arguments
+	args = parser.parse_args()
+
+	# Create an instance of the Search Engine
+	searchEngine = SearchEngine(args)
+
+	# Either handle query from user or evaluate on the complete dataset 
+	start_time = time.time()
+	if args.custom:
+		searchEngine.handleCustomQuery()
+	else:
+		searchEngine.evaluateDataset()
+		end_time = time.time()
+		print("Cranfield Query Dataset Time taken : " + str(end_time - start_time) + " seconds")
+	
