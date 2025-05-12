@@ -1,40 +1,22 @@
 from util import *
-import nltk
 from nltk.stem import PorterStemmer
-# Add your import statements here
-
-
-
 
 class InflectionReduction:
-	def __init__(self):
-		self.porter_stemmer = PorterStemmer() #Initiating the Porter Stemmer Model
-	def reduce(self, text):
-		"""
-		Stemming/Lemmatization
+    def __init__(self):
+        self.stemmer = PorterStemmer()
 
-		Parameters
-		----------
-		arg1 : list
-			A list of lists where each sub-list a sequence of tokens
-			representing a sentence
+    def reduce(self, text):
+        """
+        Stem each token in the input text using PorterStemmer
 
-		Returns
-		-------
-		list
-			A list of lists where each sub-list is a sequence of
-			stemmed/lemmatized tokens representing a sentence
-		"""
+        Parameters
+        ----------
+        text : list
+            A list of lists where each sub-list is a sentence of tokens
 
-		reducedText = None
-		reducedText = []
-		for tokens in text:
-			curr_token_list = []
-			for token in tokens:
-				#Looped through every token in list of list of words after word tokenization and performed stemming. Lemmatization using wordNet will be done in 1B.
-				curr_token_list.append(self.porter_stemmer.stem(token))
-			reducedText.append(curr_token_list)
-		#Fill in code here
-		return reducedText
-
-
+        Returns
+        -------
+        list
+            A list of lists with stemmed tokens
+        """
+        return [[self.stemmer.stem(token) for token in sentence] for sentence in text]

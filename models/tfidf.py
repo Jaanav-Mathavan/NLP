@@ -27,10 +27,7 @@ class TFIDF:
         self.vectorizer = None
         self.doc_tfidf_matrix = None
         self.words = None
-        self.include_bigrams = include_bigrams
         self.idf_list = None
-        self.qex = qex  
-        self.dex = dex  
 
         self.sim_matrix_path = sim_matrix_path
         self.sim_matrix = None

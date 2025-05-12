@@ -171,6 +171,7 @@ class InformationRetrieval():
             doc_IDs_ordered.append(ranked_docs)
 
         return doc_IDs_ordered
+
     
 #from util import *
 #import numpy as np
@@ -294,4 +295,3 @@ class InformationRetrieval():
 #		return results
 
 #Comparing code using official tf-idf vectorizer. The above is coded from scratch.
-
