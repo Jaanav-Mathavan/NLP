@@ -2,9 +2,9 @@ from sentenceSegmentation import SentenceSegmentation
 from tokenization import Tokenization
 from inflectionReduction import InflectionReduction
 from stopwordRemoval import StopwordRemoval
+from esa import ExplicitSemanticAnalysis
 from informationRetrieval import InformationRetrieval
-from esa import ExplicitSemanticAnalysis
-from esa import ExplicitSemanticAnalysis
+from models.BM25 import IR_BM25
 from evaluation import Evaluation
 from models.autocomplete import Autocomplete
 import os
@@ -36,6 +36,8 @@ class SearchEngine:
         self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
         if args.model in ["esa", "nesa"]:
             self.informationRetriever = ExplicitSemanticAnalysis(model_type=args.model)
+        elif args.model == "bm25":
+            self.informationRetriever = IR_BM25()
         else:
             self.informationRetriever = InformationRetrieval()
 
