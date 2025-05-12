@@ -3,6 +3,7 @@ from tokenization import Tokenization
 from inflectionReduction import InflectionReduction
 from stopwordRemoval import StopwordRemoval
 from informationRetrieval import InformationRetrieval
+from esa import ExplicitSemanticAnalysis
 from evaluation import Evaluation
 from models.autocomplete import Autocomplete
 import os
@@ -21,10 +22,20 @@ elif version_info.major == 2:
     except NameError:
         pass
 else:
-    print ("Unknown python version - input function not safe")
-
+    print("Unknown python version - input function not safe")
 
 class SearchEngine:
+    def __init__(self, args):
+        self.args = args
+        self.tokenizer = Tokenization()
+        self.sentenceSegmenter = SentenceSegmentation()
+        self.inflectionReducer = InflectionReduction()
+        self.stopwordRemover = StopwordRemoval()
+        self.evaluator = Evaluation()
+        if args.model in ["esa", "nesa"]:
+            self.informationRetriever = ExplicitSemanticAnalysis(model_type=args.model)
+        else:
+            self.informationRetriever = InformationRetrieval()
 
 	def __init__(self, args):
 		self.args = args
@@ -37,135 +48,65 @@ class SearchEngine:
 		self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
 
 
-	def segmentSentences(self, text):
-		"""
-		Call the required sentence segmenter
-		"""
-		if self.args.segmenter == "naive":
-			return self.sentenceSegmenter.naive(text)
-		elif self.args.segmenter == "punkt":
-			return self.sentenceSegmenter.punkt(text)
+    def segmentSentences(self, text):
+        if self.args.segmenter == "naive":
+            return self.sentenceSegmenter.naive(text)
+        elif self.args.segmenter == "punkt":
+            return self.sentenceSegmenter.punkt(text)
 
-	def tokenize(self, text):
-		"""
-		Call the required tokenizer
-		"""
-		if self.args.tokenizer == "naive":
-			return self.tokenizer.naive(text)
-		elif self.args.tokenizer == "ptb":
-			return self.tokenizer.pennTreeBank(text)
+    def tokenize(self, text):
+        if self.args.tokenizer == "naive":
+            return self.tokenizer.naive(text)
+        elif self.args.tokenizer == "ptb":
+            return self.tokenizer.pennTreeBank(text)
 
-	def reduceInflection(self, text):
-		"""
-		Call the required stemmer/lemmatizer
-		"""
-		return self.inflectionReducer.reduce(text)
+    def reduceInflection(self, text):
+        return self.inflectionReducer.reduce(text)
 
-	def removeStopwords(self, text):
-		"""
-		Call the required stopword remover
-		"""
-		return self.stopwordRemover.fromList(text)
+    def removeStopwords(self, text):
+        return self.stopwordRemover.fromList(text)
 
-
-	def preprocessQueries(self, queries):
-		"""
-		Preprocess the queries - segment, tokenize, stem/lemmatize and remove stopwords
-		"""
-		os.makedirs(self.args.out_folder, exist_ok=True)
+    def preprocessQueries(self, queries):
+        os.makedirs(self.args.out_folder, exist_ok=True)
 		self.autocomplete.model.train(queries)
-		# Segment queries
-		segmentedQueries = []
-		for query in queries:
-			segmentedQuery = self.segmentSentences(query)
-			segmentedQueries.append(segmentedQuery)
-		json.dump(segmentedQueries, open(self.args.out_folder + "segmented_queries.txt", 'w'))
-		# Tokenize queries
-		tokenizedQueries = []
-		for query in segmentedQueries:
-			tokenizedQuery = self.tokenize(query)
-			tokenizedQueries.append(tokenizedQuery)
-		json.dump(tokenizedQueries, open(self.args.out_folder + "tokenized_queries.txt", 'w'))
-		# Stem/Lemmatize queries
-		reducedQueries = []
-		for query in tokenizedQueries:
-			reducedQuery = self.reduceInflection(query)
-			reducedQueries.append(reducedQuery)
-		json.dump(reducedQueries, open(self.args.out_folder + "reduced_queries.txt", 'w'))
-		# Remove stopwords from queries
-		stopwordRemovedQueries = []
-		for query in reducedQueries:
-			stopwordRemovedQuery = self.removeStopwords(query)
-			stopwordRemovedQueries.append(stopwordRemovedQuery)
-		json.dump(stopwordRemovedQueries, open(self.args.out_folder + "stopword_removed_queries.txt", 'w'))
+        segmentedQueries = [self.segmentSentences(query) for query in queries]
+        json.dump(segmentedQueries, open(self.args.out_folder + "segmented_queries.txt", 'w'))
+        tokenizedQueries = [self.tokenize(query) for query in segmentedQueries]
+        json.dump(tokenizedQueries, open(self.args.out_folder + "tokenized_queries.txt", 'w'))
+        reducedQueries = [self.reduceInflection(query) for query in tokenizedQueries]
+        json.dump(reducedQueries, open(self.args.out_folder + "reduced_queries.txt", 'w'))
+        stopwordRemovedQueries = [self.removeStopwords(query) for query in reducedQueries]
+        json.dump(stopwordRemovedQueries, open(self.args.out_folder + "stopword_removed_queries.txt", 'w'))
+        print("Sample preprocessed query tokens:", stopwordRemovedQueries[0][:10])
+        return stopwordRemovedQueries
 
-		preprocessedQueries = stopwordRemovedQueries
-		return preprocessedQueries
+    def preprocessDocs(self, docs):
+        segmentedDocs = [self.segmentSentences(doc) for doc in docs]
+        json.dump(segmentedDocs, open(self.args.out_folder + "segmented_docs.txt", 'w'))
+        tokenizedDocs = [self.tokenize(doc) for doc in segmentedDocs]
+        json.dump(tokenizedDocs, open(self.args.out_folder + "tokenized_docs.txt", 'w'))
+        reducedDocs = [self.reduceInflection(doc) for doc in tokenizedDocs]
+        json.dump(reducedDocs, open(self.args.out_folder + "reduced_docs.txt", 'w'))
+        stopwordRemovedDocs = [self.removeStopwords(doc) for doc in reducedDocs]
+        json.dump(stopwordRemovedDocs, open(self.args.out_folder + "stopword_removed_docs.txt", 'w'))
+        print("Sample preprocessed doc tokens:", stopwordRemovedDocs[0][:10])
+        return stopwordRemovedDocs
 
-	def preprocessDocs(self, docs):
-		"""
-		Preprocess the documents
-		"""
-		
-		# Segment docs
-		segmentedDocs = []
-		for doc in docs:
-			segmentedDoc = self.segmentSentences(doc)
-			segmentedDocs.append(segmentedDoc)
-		json.dump(segmentedDocs, open(self.args.out_folder + "segmented_docs.txt", 'w'))
-		# Tokenize docs
-		tokenizedDocs = []
-		for doc in segmentedDocs:
-			tokenizedDoc = self.tokenize(doc)
-			tokenizedDocs.append(tokenizedDoc)
-		json.dump(tokenizedDocs, open(self.args.out_folder + "tokenized_docs.txt", 'w'))
-		# Stem/Lemmatize docs
-		reducedDocs = []
-		for doc in tokenizedDocs:
-			reducedDoc = self.reduceInflection(doc)
-			reducedDocs.append(reducedDoc)
-		json.dump(reducedDocs, open(self.args.out_folder + "reduced_docs.txt", 'w'))
-		# Remove stopwords from docs
-		stopwordRemovedDocs = []
-		for doc in reducedDocs:
-			stopwordRemovedDoc = self.removeStopwords(doc)
-			stopwordRemovedDocs.append(stopwordRemovedDoc)
-		json.dump(stopwordRemovedDocs, open(self.args.out_folder + "stopword_removed_docs.txt", 'w'))
+    def evaluateDataset(self):
+        queries_json = json.load(open(self.args.dataset + "cran_queries.json", 'r'))[:]
+        query_ids = [str(item["query number"]) for item in queries_json]  # Ensure string IDs
+        queries = [item["query"] for item in queries_json]
+        processedQueries = self.preprocessQueries(queries)
 
-		preprocessedDocs = stopwordRemovedDocs
-		return preprocessedDocs
+        docs_json = json.load(open(self.args.dataset + "cran_docs.json", 'r'))[:]
+        doc_ids = [str(item["id"]) for item in docs_json]  # Ensure string IDs
+        docs = [item["body"] for item in docs_json]
+        processedDocs = self.preprocessDocs(docs)
 
+        self.informationRetriever.buildIndex(processedDocs, doc_ids)
+        doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
 
-	def evaluateDataset(self):
-		"""
-		- preprocesses the queries and documents, stores in output folder
-		- invokes the IR system
-		- evaluates precision, recall, fscore, nDCG and MAP 
-		  for all queries in the Cranfield dataset
-		- produces graphs of the evaluation metrics in the output folder
-		"""
-
-		# Read queries
-		queries_json = json.load(open(args.dataset + "cran_queries.json", 'r'))[:]
-		query_ids, queries = [item["query number"] for item in queries_json], \
-								[item["query"] for item in queries_json]
-		# Process queries 
-		processedQueries = self.preprocessQueries(queries)
-
-		# Read documents
-		docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
-		doc_ids, docs = [item["id"] for item in docs_json], \
-								[item["body"] for item in docs_json]
-		# Process documents
-		processedDocs = self.preprocessDocs(docs)
-
-		# Build document index
-		self.informationRetriever.buildIndex(processedDocs, doc_ids)
-		# Rank the documents for each query
-		doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
-
-		# Read relevance judements
-		qrels = json.load(open(args.dataset + "cran_qrels.json", 'r'))[:]
+        qrels = json.load(open(self.args.dataset + "cran_qrels.json", 'r'))[:]
 
 		# Calculate precision, recall, f-score, MAP and nDCG for k = 1 to 10
 		rank=20
@@ -192,50 +133,33 @@ class SearchEngine:
 			print("MAP, nDCG @ " +  
 				str(k) + " : " + str(MAP) + ", " + str(nDCG))
 
-		# Plot the metrics and save plot 
-		plt.plot(range(1, rank+1), precisions, label="Precision")
-		plt.plot(range(1, rank+1), recalls, label="Recall")
-		plt.plot(range(1, rank+1), fscores, label="F-Score")
-		plt.plot(range(1, rank+1), MAPs, label="MAP")
-		plt.plot(range(1, rank+1), nDCGs, label="nDCG")
-		plt.legend()
-		plt.title("Evaluation Metrics - Cranfield Dataset")
-		plt.xlabel("k")
-		plt.savefig(args.out_folder + "eval_plot.png")
+        plt.plot(range(1, rank+1), precisions, label="Precision")
+        plt.plot(range(1, rank+1), recalls, label="Recall")
+        plt.plot(range(1, rank+1), fscores, label="F-Score")
+        plt.plot(range(1, rank+1), MAPs, label="MAP")
+        plt.plot(range(1, rank+1), nDCGs, label="nDCG")
+        plt.legend()
+        plt.title("Evaluation Metrics - Cranfield Dataset")
+        plt.xlabel("k")
+        plt.savefig(self.args.out_folder + "eval_plot.png")
 
-		
-	def handleCustomQuery(self):
-		"""
-		Take a custom query as input and return top five relevant documents
-		"""
-
-		#Get query
-		print("Enter query below")
-		query = input()
-		custom_start_time = time.time()
-		# Process documents
+    def handleCustomQuery(self):
+        print("Enter query below")
+        query = input()
+        custom_start_time = time.time()
 		query = self.autocomplete.complete(query)
-		processedQuery = self.preprocessQueries([query])[0]
-
-		# Read documents
-		docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
-		doc_ids, docs = [item["id"] for item in docs_json], \
-							[item["body"] for item in docs_json]
-		# Process documents
-		processedDocs = self.preprocessDocs(docs)
-
-		# Build document index
-		self.informationRetriever.buildIndex(processedDocs, doc_ids)
-		# Rank the documents for the query
-		doc_IDs_ordered = self.informationRetriever.rank([processedQuery])[0]
-		custom_end_time = time.time()
-		print("Custom Query Time taken : " + str(custom_end_time - custom_start_time) + " seconds")
-		# Print the IDs of first five documents
-		print("\nTop five document IDs : ")
-		for id_ in doc_IDs_ordered[:5]:
-			print(id_)
-
-
+        processedQuery = self.preprocessQueries([query])[0]
+        docs_json = json.load(open(self.args.dataset + "cran_docs.json", 'r'))[:]
+        doc_ids = [str(item["id"]) for item in docs_json]  # Ensure string IDs
+        docs = [item["body"] for item in docs_json]
+        processedDocs = self.preprocessDocs(docs)
+        self.informationRetriever.buildIndex(processedDocs, doc_ids)
+        doc_IDs_ordered = self.informationRetriever.rank([processedQuery])[0]
+        custom_end_time = time.time()
+        print("Custom Query Time taken : " + str(custom_end_time - custom_start_time) + " seconds")
+        print("\nTop five document IDs : ")
+        for id_ in doc_IDs_ordered[:5]:
+            print(id_)
 
 if __name__ == "__main__":
 
