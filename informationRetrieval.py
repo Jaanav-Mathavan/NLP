@@ -294,4 +294,3 @@ class InformationRetrieval():
 #		return results
 
 #Comparing code using official tf-idf vectorizer. The above is coded from scratch.
-
