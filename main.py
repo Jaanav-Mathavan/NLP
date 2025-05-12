@@ -5,6 +5,7 @@ from stopwordRemoval import StopwordRemoval
 from informationRetrieval import InformationRetrieval
 from esa import ExplicitSemanticAnalysis
 from evaluation import Evaluation
+from models.autocomplete import Autocomplete
 import os
 from sys import version_info
 import argparse
@@ -31,6 +32,7 @@ class SearchEngine:
         self.inflectionReducer = InflectionReduction()
         self.stopwordRemover = StopwordRemoval()
         self.evaluator = Evaluation()
+		self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
         if args.model in ["esa", "nesa"]:
             self.informationRetriever = ExplicitSemanticAnalysis(model_type=args.model)
         else:
@@ -54,18 +56,40 @@ class SearchEngine:
     def removeStopwords(self, text):
         return self.stopwordRemover.fromList(text)
 
-    def preprocessQueries(self, queries):
-        os.makedirs(self.args.out_folder, exist_ok=True)
-        segmentedQueries = [self.segmentSentences(query) for query in queries]
-        json.dump(segmentedQueries, open(self.args.out_folder + "segmented_queries.txt", 'w'))
-        tokenizedQueries = [self.tokenize(query) for query in segmentedQueries]
-        json.dump(tokenizedQueries, open(self.args.out_folder + "tokenized_queries.txt", 'w'))
-        reducedQueries = [self.reduceInflection(query) for query in tokenizedQueries]
-        json.dump(reducedQueries, open(self.args.out_folder + "reduced_queries.txt", 'w'))
-        stopwordRemovedQueries = [self.removeStopwords(query) for query in reducedQueries]
-        json.dump(stopwordRemovedQueries, open(self.args.out_folder + "stopword_removed_queries.txt", 'w'))
-        print("Sample preprocessed query tokens:", stopwordRemovedQueries[0][:10])
-        return stopwordRemovedQueries
+
+	def preprocessQueries(self, queries):
+		"""
+		Preprocess the queries - segment, tokenize, stem/lemmatize and remove stopwords
+		"""
+		os.makedirs(self.args.out_folder, exist_ok=True)
+		self.autocomplete.model.train(queries)
+		# Segment queries
+		segmentedQueries = []
+		for query in queries:
+			segmentedQuery = self.segmentSentences(query)
+			segmentedQueries.append(segmentedQuery)
+		json.dump(segmentedQueries, open(self.args.out_folder + "segmented_queries.txt", 'w'))
+		# Tokenize queries
+		tokenizedQueries = []
+		for query in segmentedQueries:
+			tokenizedQuery = self.tokenize(query)
+			tokenizedQueries.append(tokenizedQuery)
+		json.dump(tokenizedQueries, open(self.args.out_folder + "tokenized_queries.txt", 'w'))
+		# Stem/Lemmatize queries
+		reducedQueries = []
+		for query in tokenizedQueries:
+			reducedQuery = self.reduceInflection(query)
+			reducedQueries.append(reducedQuery)
+		json.dump(reducedQueries, open(self.args.out_folder + "reduced_queries.txt", 'w'))
+		# Remove stopwords from queries
+		stopwordRemovedQueries = []
+		for query in reducedQueries:
+			stopwordRemovedQuery = self.removeStopwords(query)
+			stopwordRemovedQueries.append(stopwordRemovedQuery)
+		json.dump(stopwordRemovedQueries, open(self.args.out_folder + "stopword_removed_queries.txt", 'w'))
+
+		preprocessedQueries = stopwordRemovedQueries
+		return preprocessedQueries
 
     def preprocessDocs(self, docs):
         segmentedDocs = [self.segmentSentences(doc) for doc in docs]
@@ -183,6 +207,11 @@ if __name__ == "__main__":
 						help = "Take custom query as input")
 	parser.add_argument('-include_bigrams', action="store_true",
 						help="Include bigrams in the TF-IDF model")
+	parser.add_argument('-autocomplete',default= "Ngram", choices=['Ngram', 'tries'], 
+						help="Autocomplete Queries")
+	parser.add_argument('-Ngram',default=3, choices=[2,3,4,5], 
+						help="Ngram Model type")
+	
 	
 	# Parse the input arguments
 	args = parser.parse_args()
