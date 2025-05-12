@@ -45,26 +45,7 @@ class SearchEngine:
             self.informationRetriever = IR_BM25()
         else:
             self.informationRetriever = InformationRetrieval()
-    def __init__(self, args):
-        self.args = args
-        self.tokenizer = Tokenization()
-        self.sentenceSegmenter = SentenceSegmentation()
-        self.inflectionReducer = InflectionReduction()
-        self.stopwordRemover = StopwordRemoval()
-        self.evaluator = Evaluation()
-        self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
-        if args.model in ["esa", "nesa"]:
-            self.informationRetriever = ExplicitSemanticAnalysis(model_type=args.model)
-        elif args.model == "bm25":
-            self.informationRetriever = IR_BM25()
-        else:
-            self.informationRetriever = InformationRetrieval()
 
-    def segmentSentences(self, text):
-        if self.args.segmenter == "naive":
-            return self.sentenceSegmenter.naive(text)
-        elif self.args.segmenter == "punkt":
-            return self.sentenceSegmenter.punkt(text)
     def segmentSentences(self, text):
         if self.args.segmenter == "naive":
             return self.sentenceSegmenter.naive(text)
@@ -76,35 +57,13 @@ class SearchEngine:
             return self.tokenizer.naive(text)
         elif self.args.tokenizer == "ptb":
             return self.tokenizer.pennTreeBank(text)
-    def tokenize(self, text):
-        if self.args.tokenizer == "naive":
-            return self.tokenizer.naive(text)
-        elif self.args.tokenizer == "ptb":
-            return self.tokenizer.pennTreeBank(text)
 
-    def reduceInflection(self, text):
-        return self.inflectionReducer.reduce(text)
     def reduceInflection(self, text):
         return self.inflectionReducer.reduce(text)
 
     def removeStopwords(self, text):
         return self.stopwordRemover.fromList(text)
-    def removeStopwords(self, text):
-        return self.stopwordRemover.fromList(text)
-
-    def preprocessQueries(self, queries):
-        os.makedirs(self.args.out_folder, exist_ok=True)
-        self.autocomplete.model.train(queries)
-        segmentedQueries = [self.segmentSentences(query) for query in queries]
-        json.dump(segmentedQueries, open(self.args.out_folder + "segmented_queries.txt", 'w'))
-        tokenizedQueries = [self.tokenize(query) for query in segmentedQueries]
-        json.dump(tokenizedQueries, open(self.args.out_folder + "tokenized_queries.txt", 'w'))
-        reducedQueries = [self.reduceInflection(query) for query in tokenizedQueries]
-        json.dump(reducedQueries, open(self.args.out_folder + "reduced_queries.txt", 'w'))
-        stopwordRemovedQueries = [self.removeStopwords(query) for query in reducedQueries]
-        json.dump(stopwordRemovedQueries, open(self.args.out_folder + "stopword_removed_queries.txt", 'w'))
-        print("Sample preprocessed query tokens:", stopwordRemovedQueries[0][:10])
-        return stopwordRemovedQueries
+    
     def preprocessQueries(self, queries):
         os.makedirs(self.args.out_folder, exist_ok=True)
         self.autocomplete.model.train(queries)
@@ -119,17 +78,6 @@ class SearchEngine:
         print("Sample preprocessed query tokens:", stopwordRemovedQueries[0][:10])
         return stopwordRemovedQueries
 
-    def preprocessDocs(self, docs):
-        segmentedDocs = [self.segmentSentences(doc) for doc in docs]
-        json.dump(segmentedDocs, open(self.args.out_folder + "segmented_docs.txt", 'w'))
-        tokenizedDocs = [self.tokenize(doc) for doc in segmentedDocs]
-        json.dump(tokenizedDocs, open(self.args.out_folder + "tokenized_docs.txt", 'w'))
-        reducedDocs = [self.reduceInflection(doc) for doc in tokenizedDocs]
-        json.dump(reducedDocs, open(self.args.out_folder + "reduced_docs.txt", 'w'))
-        stopwordRemovedDocs = [self.removeStopwords(doc) for doc in reducedDocs]
-        json.dump(stopwordRemovedDocs, open(self.args.out_folder + "stopword_removed_docs.txt", 'w'))
-        print("Sample preprocessed doc tokens:", stopwordRemovedDocs[0][:10])
-        return stopwordRemovedDocs
     def preprocessDocs(self, docs):
         segmentedDocs = [self.segmentSentences(doc) for doc in docs]
         json.dump(segmentedDocs, open(self.args.out_folder + "segmented_docs.txt", 'w'))
@@ -268,19 +216,8 @@ if __name__ == "__main__":
 						help = "Use document expansion")
 	parser.add_argument('-model', default= "tfidf", choices=['tfidf', 'lsa', 'hybrid', 'esa', 'nesa', 'bm25', 'wordnet_tfidf', 'wordnet_lsa', 'wordnet_esa', 'wordnet_hybrid', 'embeddings'], 
                     help="Choose the model: 'tfidf', 'lsa', 'esa', or 'hybrid'")
-	parser.add_argument('-qex', default=False, action = "store_true",
-						help = "Use query expansion")
-	parser.add_argument('-dex', default=False, action = "store_true",
-						help = "Use document expansion")
 	parser.add_argument('-custom', action = "store_true", 
 						help = "Take custom query as input")
-	parser.add_argument('-include_bigrams', action="store_true",
-						help="Include bigrams in the TF-IDF model")
-	parser.add_argument('-autocomplete',default= "Ngram", choices=['Ngram', 'tries'], 
-						help="Autocomplete Queries")
-	parser.add_argument('-Ngram',default=3, choices=[2,3,4,5], 
-						help="Ngram Model type")
-	
 	parser.add_argument('-include_bigrams', action="store_true",
 						help="Include bigrams in the TF-IDF model")
 	parser.add_argument('-autocomplete',default= "Ngram", choices=['Ngram', 'tries'], 
