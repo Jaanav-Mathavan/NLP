@@ -33,7 +33,7 @@ class SearchEngine:
         self.inflectionReducer = InflectionReduction()
         self.stopwordRemover = StopwordRemoval()
         self.evaluator = Evaluation()
-		self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
+        self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
         if args.model in ["esa", "nesa"]:
             self.informationRetriever = ExplicitSemanticAnalysis(model_type=args.model)
         else:
