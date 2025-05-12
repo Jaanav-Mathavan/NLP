@@ -105,7 +105,7 @@ class SearchEngine:
         doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
 
         qrels = json.load(open(self.args.dataset + "cran_qrels.json", 'r'))[:]
-        rank=20
+        rank=10
         precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
         for k in range(1, rank+1):
             precision = self.evaluator.meanPrecision(
@@ -208,8 +208,6 @@ if __name__ == "__main__":
 	                    help = "Sentence Segmenter Type [naive|punkt]")
 	parser.add_argument('-tokenizer',  default = "ptb",
 	                    help = "Tokenizer Type [naive|ptb]")
-	parser.add_argument('-model', default= "tfidf", choices=['tfidf', 'lsa', 'hybrid', 'esa', 'nesa', 'bm25', 'wordnet_tfidf', 'wordnet_lsa', 'wordnet_esa', 'wordnet_hybrid', 'embeddings'], 
-                    help="Choose the model: 'tfidf', 'lsa', 'esa', or 'hybrid'")
 	parser.add_argument('-qex', default=False, action = "store_true",
 						help = "Use query expansion")
 	parser.add_argument('-dex', default=False, action = "store_true",
@@ -220,7 +218,7 @@ if __name__ == "__main__":
 						help = "Take custom query as input")
 	parser.add_argument('-include_bigrams', action="store_true",
 						help="Include bigrams in the TF-IDF model")
-	parser.add_argument('-autocomplete',default= "Ngram", choices=['Ngram', 'tries'], 
+	parser.add_argument('-autocomplete', default= "Ngram", choices=['Ngram', 'tries'], 
 						help="Autocomplete Queries")
 	parser.add_argument('-Ngram',default=3, choices=[2,3,4,5], 
 						help="Ngram Model type")

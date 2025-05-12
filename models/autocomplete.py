@@ -155,9 +155,8 @@ class NgramAutocomplete:
         return ' '.join(corrected_tokens)
 
 class Autocomplete:
-    def __init__(self,model='tries', n=3):
+    def __init__(self, model='tries', n=3):
         self.model_type = model
-        self.queries = queries
         if model == 'tries':
             self.model = Trie()
         elif model == 'Ngram':
@@ -166,7 +165,7 @@ class Autocomplete:
             raise ValueError("Invalid model. Choose 'tries' or 'Ngram'")
         
 
-    def train(self):
+    def train(self, queries):
         self.model.train(self.queries)
 
     def complete(self, query):
