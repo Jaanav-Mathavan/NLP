@@ -3,7 +3,8 @@ from tokenization import Tokenization
 from inflectionReduction import InflectionReduction
 from stopwordRemoval import StopwordRemoval
 # from informationRetrieval import InformationRetrieval
-from models.BM25 import IR_BM25
+from models.BM25 import IR_BM25 
+from informationRetrieval import InformationRetrieval
 from evaluation import Evaluation
 import os
 from sys import version_info
@@ -32,7 +33,10 @@ class SearchEngine:
 		self.sentenceSegmenter = SentenceSegmentation()
 		self.inflectionReducer = InflectionReduction()
 		self.stopwordRemover = StopwordRemoval()
-		self.informationRetriever = IR_BM25()
+		if args.model == "bm25":
+			self.informationRetriever = IR_BM25()
+		else:
+			self.informationRetriever = InformationRetrieval(args.model, args.qex, args.dex, args.include_bigrams)
 		self.evaluator = Evaluation()
 
 
