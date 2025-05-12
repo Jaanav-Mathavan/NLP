@@ -94,73 +94,70 @@ class SearchEngine:
         doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
 
         qrels = json.load(open(self.args.dataset + "cran_qrels.json", 'r'))[:]
-
-		# Calculate precision, recall, f-score, MAP and nDCG for k = 1 to 10
-		rank=20
-		precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
-		for k in range(1, rank+1):
-			precision = self.evaluator.meanPrecision(
+        rank=20
+        precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
+        for k in range(1, rank+1):
+            precision = self.evaluator.meanPrecision(
 				doc_IDs_ordered, query_ids, qrels, k)
-			precisions.append(precision)
-			recall = self.evaluator.meanRecall(
+            precisions.append(precision)
+            recall = self.evaluator.meanRecall(
 				doc_IDs_ordered, query_ids, qrels, k)
-			recalls.append(recall)
-			fscore = self.evaluator.meanFscore(
+            recalls.append(recall)
+            fscore = self.evaluator.meanFscore(
 				doc_IDs_ordered, query_ids, qrels, k)
-			fscores.append(fscore)
-			print("Precision, Recall and F-score @ " +  
+            fscores.append(fscore)
+            print("Precision, Recall and F-score @ " +  
 				str(k) + " : " + str(precision) + ", " + str(recall) + 
 				", " + str(fscore))
-			MAP = self.evaluator.meanAveragePrecision(
+            MAP = self.evaluator.meanAveragePrecision(
 				doc_IDs_ordered, query_ids, qrels, k)
-			MAPs.append(MAP)
-			nDCG = self.evaluator.meanNDCG(
+            MAPs.append(MAP)
+            nDCG = self.evaluator.meanNDCG(
 				doc_IDs_ordered, query_ids, qrels, k)
-			nDCGs.append(nDCG)
-			print("MAP, nDCG @ " +  
+            nDCGs.append(nDCG)
+            print("MAP, nDCG @ " +  
 				str(k) + " : " + str(MAP) + ", " + str(nDCG))
-
-		# Plot the metrics and save plot 
-		plt.plot(range(1, rank+1), precisions, label="Precision")
-		plt.plot(range(1, rank+1), recalls, label="Recall")
-		plt.plot(range(1, rank+1), fscores, label="F-Score")
-		plt.plot(range(1, rank+1), MAPs, label="MAP")
-		plt.plot(range(1, rank+1), nDCGs, label="nDCG")
-		plt.legend()
-		plt.title("Evaluation Metrics - Cranfield Dataset")
-		plt.xlabel("k")
-		plt.savefig(args.out_folder + "eval_plot.png")
+            
+        plt.plot(range(1, rank+1), precisions, label="Precision")
+        plt.plot(range(1, rank+1), recalls, label="Recall")
+        plt.plot(range(1, rank+1), fscores, label="F-Score")
+        plt.plot(range(1, rank+1), MAPs, label="MAP")
+        plt.plot(range(1, rank+1), nDCGs, label="nDCG")
+        plt.legend()
+        plt.title("Evaluation Metrics - Cranfield Dataset")
+        plt.xlabel("k")
+        plt.savefig(args.out_folder + "eval_plot.png")
 
 		
-	def handleCustomQuery(self):
-		"""
-		Take a custom query as input and return top five relevant documents
-		"""
+    def handleCustomQuery(self):
+        """
+        Take a custom query as input and return top five relevant documents
+        """
 
-		#Get query
-		print("Enter query below")
-		query = input()
-		custom_start_time = time.time()
-		# Process documents
-		processedQuery = self.preprocessQueries([query])[0]
+        # Get query
+        print("Enter query below")
+        query = input()
+        custom_start_time = time.time()
+        # Process documents
+        processedQuery = self.preprocessQueries([query])[0]
 
-		# Read documents
-		docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
-		doc_ids, docs = [item["id"] for item in docs_json], \
-							[item["body"] for item in docs_json]
-		# Process documents
-		processedDocs = self.preprocessDocs(docs)
+        # Read documents
+        docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
+        doc_ids, docs = [item["id"] for item in docs_json], \
+                        [item["body"] for item in docs_json]
+        # Process documents
+        processedDocs = self.preprocessDocs(docs)
 
-		# Build document index
-		self.informationRetriever.buildIndex(processedDocs, doc_ids)
-		# Rank the documents for the query
-		doc_IDs_ordered = self.informationRetriever.rank([processedQuery])[0]
-		custom_end_time = time.time()
-		print("Custom Query Time taken : " + str(custom_end_time - custom_start_time) + " seconds")
-		# Print the IDs of first five documents
-		print("\nTop five document IDs : ")
-		for id_ in doc_IDs_ordered[:5]:
-			print(id_)
+        # Build document index
+        self.informationRetriever.buildIndex(processedDocs, doc_ids)
+        # Rank the documents for the query
+        doc_IDs_ordered = self.informationRetriever.rank([processedQuery])[0]
+        custom_end_time = time.time()
+        print("Custom Query Time taken : " + str(custom_end_time - custom_start_time) + " seconds")
+        # Print the IDs of first five documents
+        print("\nTop five document IDs : ")
+        for id_ in doc_IDs_ordered[:5]:
+            print(id_)
 
 if __name__ == "__main__":
 

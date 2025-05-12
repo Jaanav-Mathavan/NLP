@@ -245,7 +245,7 @@ class ExplicitSemanticAnalysis:
         print(f"ESA/NESA index build time: {time.time() - start_time:.2f} seconds")
         print(f"Indexed {len(self.doc_vectors)} documents into ESA/NESA vectors.")
 
-    def rank(self, queries, alpha=1, beta_prf=0, gamma_expansion=0, K_prf=0, M_prf=0):
+    def rank(self, queries, alpha=0.7, beta_prf=0, gamma_expansion=0, K_prf=0, M_prf=0):
         """
         Rank documents by relevance to each query using ESA or NESA with optional TF-IDF hybrid scoring
         and pseudo-relevance feedback.
@@ -294,8 +294,6 @@ class ExplicitSemanticAnalysis:
                 all_ranked_doc_ids.append([])
                 print(f"Query {query_idx+1} is empty after processing. Skipping.")
                 continue
-            
-            print(f"\nProcessing Query {query_idx+1}/{len(queries)}: {' '.join(query_tokens[:10])}...")
 
             query_term_counts = Counter(query_tokens)
             
@@ -388,7 +386,7 @@ class ExplicitSemanticAnalysis:
                         expanded_norm_sq = sum(v**2 for v in expanded_query_concept_vector.values())
                         current_query_norm = sqrt(expanded_norm_sq) if expanded_norm_sq > 0 else 1.0
             else:
-                print(f"  Skipping PRF for query {query_idx+1} (K_prf or M_prf is 0, or no relevant docs for feedback).")
+                pass
 
 
             # 4. Final Ranking with Hybrid Scoring
