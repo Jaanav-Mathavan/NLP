@@ -5,7 +5,11 @@ from stopwordRemoval import StopwordRemoval
 # from informationRetrieval import InformationRetrieval
 from models.BM25 import IR_BM25
 from esa import ExplicitSemanticAnalysis
+# from informationRetrieval import InformationRetrieval
+from models.BM25 import IR_BM25
+from esa import ExplicitSemanticAnalysis
 from informationRetrieval import InformationRetrieval
+from models.BM25 import IR_BM25
 from evaluation import Evaluation
 from models.autocomplete import Autocomplete
 import os
@@ -27,6 +31,20 @@ else:
     print("Unknown python version - input function not safe")
 
 class SearchEngine:
+    def __init__(self, args):
+        self.args = args
+        self.tokenizer = Tokenization()
+        self.sentenceSegmenter = SentenceSegmentation()
+        self.inflectionReducer = InflectionReduction()
+        self.stopwordRemover = StopwordRemoval()
+        self.evaluator = Evaluation()
+        self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
+        if args.model in ["esa", "nesa"]:
+            self.informationRetriever = ExplicitSemanticAnalysis(model_type=args.model)
+        elif args.model == "bm25":
+            self.informationRetriever = IR_BM25()
+        else:
+            self.informationRetriever = InformationRetrieval()
     def __init__(self, args):
         self.args = args
         self.tokenizer = Tokenization()
@@ -267,6 +285,8 @@ if __name__ == "__main__":
 						help="Include bigrams in the TF-IDF model")
 	parser.add_argument('-autocomplete',default= "Ngram", choices=['Ngram', 'tries'], 
 						help="Autocomplete Queries")
+	parser.add_argument('-Ngram',default=3, choices=[2,3,4,5], 
+						help="Ngram Model type")
 	
 	
 	# Parse the input arguments
