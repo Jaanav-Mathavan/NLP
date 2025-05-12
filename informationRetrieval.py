@@ -43,32 +43,36 @@ class InformationRetrieval():
         -------
         None
         """
-        self.docIDs = docIDs
-        self.docID_to_idx = {doc_id: idx for idx, doc_id in enumerate(docIDs)}
-        self.idx_to_docID = {idx: doc_id for idx, doc_id in enumerate(docIDs)}
-        
-        flattened_docs = []
-        index = {}
+        if not self.use_em:
+            self.docIDs = docIDs
+            self.docID_to_idx = {doc_id: idx for idx, doc_id in enumerate(docIDs)}
+            self.idx_to_docID = {idx: doc_id for idx, doc_id in enumerate(docIDs)}
 
-        for doc, doc_id in zip(docs, docIDs):
-            words = [word for sentence in doc for word in sentence]
-            flattened_docs.append(" ".join(words))
-            for word in words:
-                if word not in index:
-                    index[word] = set()
-                index[word].add(doc_id)
-        
-        for word in index:
-            index[word] = list(index[word])
-        self.index = index
+            flattened_docs = []
+            index = {}
+
+            for doc, doc_id in zip(docs, docIDs):
+                words = [word for sentence in doc for word in sentence]
+                flattened_docs.append(" ".join(words))
+                for word in words:
+                    if word not in index:
+                        index[word] = set()
+                    index[word].add(doc_id)
+
+            for word in index:
+                index[word] = list(index[word])
+            self.index = index
+
+            self.compute_tf_idf_matrix(flattened_docs)
+
+            if self.use_lsa:
+                self.compute_lsa_matrix(self.tfidf_model.get_doc_matrix())
             
-        self.compute_tf_idf_matrix(flattened_docs)
-        
-        if self.use_lsa:
-            self.compute_lsa_matrix(self.tfidf_model.get_doc_matrix())
-            
-        if self.use_em:
-            self.compute_st_matrix(flattened_docs)
+        else:
+            self.docIDs = docIDs
+            self.docID_to_idx = {doc_id: idx for idx, doc_id in enumerate(docIDs)}
+            self.idx_to_docID = {idx: doc_id for idx, doc_id in enumerate(docIDs)}
+            self.compute_st_matrix(docs)
 
     def compute_tf_idf_matrix(self, flattened_docs, docIDs=None):
         """
@@ -108,7 +112,7 @@ class InformationRetrieval():
         
     def compute_st_matrix(self, flattened_docs):
         """
-        Computes the Word2Vec matrix for the documents
+        Computes the Sentence transformer matrix for the documents
 
         Parameters
         ----------
@@ -143,30 +147,33 @@ class InformationRetrieval():
         doc_IDs_ordered = []
 
         for query in queries:
-            words = [word for sentence in query for word in sentence if word in self.index]
-            query_text = " ".join(words)
             if self.use_em:
-                query_text = " ".join([word for sentence in query for word in sentence])
-                query_vector = self.st_model.transform([query_text])
-                similarity_scores = cosine_similarity(self.st_model.get_doc_matrix(), query_vector).flatten()    
-            elif self.use_lsa:
-                query_vector = self.lsa_model.transform(query_vector)
-                similarity_scores = cosine_similarity(self.lsa_model.get_doc_matrix(), query_vector).flatten()
+                query_vector = self.st_model.transform([query])
+                similarity_scores = cosine_similarity(self.st_model.get_doc_matrix(), query_vector).flatten()   
+                relevant_docs = None
             else:
-                query_vector = self.tfidf_model.transform([query_text])
-                similarity_scores = cosine_similarity(self.tfidf_model.get_doc_matrix(), query_vector).flatten()
+                words = [word for sentence in query for word in sentence if word in self.index]
+                query_text = " ".join(words)
+                query_vector = self.tfidf_model.transform([query_text]) 
+                if self.use_lsa:
+                    query_vector = self.lsa_model.transform(query_vector)
+                    similarity_scores = cosine_similarity(self.lsa_model.get_doc_matrix(), query_vector).flatten()
+                else:
+                    similarity_scores = cosine_similarity(self.tfidf_model.get_doc_matrix(), query_vector).flatten()
 
-            relevant_docs = set()
-            for word in words:
-                if word in self.index:
-                    relevant_docs.update(self.index[word])
+                relevant_docs = set()
+                for word in words:
+                    if word in self.index:
+                        relevant_docs.update(self.index[word])
             
             if relevant_docs:
                 relevant_indices = [self.docID_to_idx[doc_id] for doc_id in relevant_docs]
                 relevant_scores = [(self.idx_to_docID[idx], similarity_scores[idx]) for idx in relevant_indices]
                 ranked_docs = [str(doc_id) for doc_id, _ in sorted(relevant_scores, key=lambda x: x[1], reverse=True)]
             else:
-                ranked_docs = []
+                relevant_indices = [self.docID_to_idx[doc_id] for doc_id in self.docIDs]
+                relevant_scores = [(self.idx_to_docID[idx], similarity_scores[idx]) for idx in relevant_indices]
+                ranked_docs = [str(doc_id) for doc_id, _ in sorted(relevant_scores, key=lambda x: x[1], reverse=True)]
 
             doc_IDs_ordered.append(ranked_docs)
 

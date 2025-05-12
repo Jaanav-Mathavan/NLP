@@ -37,7 +37,7 @@ class SearchEngine:
         self.sentenceSegmenter = SentenceSegmentation()
         self.inflectionReducer = InflectionReduction()
         self.stopwordRemover = StopwordRemoval()
-        self.evaluator = Evaluation()
+        self.evaluator = Evaluation(model=args.model)
         self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
         if args.model in ["esa", "nesa"]:
             self.informationRetriever = ExplicitSemanticAnalysis(model_type=args.model)
@@ -92,12 +92,18 @@ class SearchEngine:
         queries_json = json.load(open(self.args.dataset + "cran_queries.json", 'r'))[:]
         query_ids = [str(item["query number"]) for item in queries_json]  # Ensure string IDs
         queries = [item["query"] for item in queries_json]
-        processedQueries = self.preprocessQueries(queries)
+        if args.model != "embeddings":
+            processedQueries = self.preprocessQueries(queries)
+        else:
+            processedQueries = queries
 
         docs_json = json.load(open(self.args.dataset + "cran_docs.json", 'r'))[:]
         doc_ids = [str(item["id"]) for item in docs_json]  # Ensure string IDs
         docs = [item["body"] for item in docs_json]
-        processedDocs = self.preprocessDocs(docs)
+        if args.model != "embeddings":
+            processedDocs = self.preprocessDocs(docs)
+        else:
+            processedDocs = docs
 
         self.informationRetriever.buildIndex(processedDocs, doc_ids)
         doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
@@ -107,7 +113,7 @@ class SearchEngine:
         precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
         for k in range(1, rank+1):
             precision = self.evaluator.meanPrecision(
-				doc_IDs_ordered, query_ids, qrels, k)
+                doc_IDs_ordered, query_ids, qrels, k)
             precisions.append(precision)
             recall = self.evaluator.meanRecall(
 				doc_IDs_ordered, query_ids, qrels, k)

@@ -1,7 +1,7 @@
 from sklearn.decomposition import TruncatedSVD
 
 class LSA:
-    def __init__(self, n_components=20):
+    def __init__(self, n_components=150):
         self.model = None
         self.doc_lsa_matrix = None
         self.n_components = n_components

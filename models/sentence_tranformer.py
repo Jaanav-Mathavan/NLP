@@ -47,7 +47,7 @@ class SentenceTransformerEmbedder:
         """
         Embed a single sentence into a vector using the Sentence Transformer model.
         """
-        inputs = self.tokenizer(sentence, return_tensors="pt").to(self.device)
+        inputs = self.tokenizer(sentence, return_tensors="pt", truncation=True, padding=True).to(self.device)
         
         with torch.no_grad():
             outputs = self.model(**inputs)
