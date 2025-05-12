@@ -37,16 +37,7 @@ class SearchEngine:
             self.informationRetriever = ExplicitSemanticAnalysis(model_type=args.model)
         else:
             self.informationRetriever = InformationRetrieval()
-
-	def __init__(self, args):
-		self.args = args
-		self.tokenizer = Tokenization()
-		self.sentenceSegmenter = SentenceSegmentation()
-		self.inflectionReducer = InflectionReduction()
-		self.stopwordRemover = StopwordRemoval()
-		self.informationRetriever = InformationRetrieval(self.args.model, self.args.qex, self.args.dex, self.args.include_bigrams)
-		self.evaluator = Evaluation()
-		self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
+        self.autocomplete = Autocomplete(model=self.args.autocomplete,n=self.args.Ngram)
 
 
     def segmentSentences(self, text):
