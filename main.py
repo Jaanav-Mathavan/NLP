@@ -59,7 +59,7 @@ class SearchEngine:
 
     def preprocessQueries(self, queries):
         os.makedirs(self.args.out_folder, exist_ok=True)
-		self.autocomplete.model.train(queries)
+        self.autocomplete.model.train(queries)
         segmentedQueries = [self.segmentSentences(query) for query in queries]
         json.dump(segmentedQueries, open(self.args.out_folder + "segmented_queries.txt", 'w'))
         tokenizedQueries = [self.tokenize(query) for query in segmentedQueries]
@@ -98,30 +98,31 @@ class SearchEngine:
         doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
 
         qrels = json.load(open(self.args.dataset + "cran_qrels.json", 'r'))[:]
-
-        # Debugging: Check ID consistency
-        print("Sample doc_id:", doc_ids[0], "Type:", type(doc_ids[0]))
-        print("Sample query_id:", query_ids[0], "Type:", type(query_ids[0]))
-        print("Sample qrels entry:", qrels[0])
-        doc_ids_set = set(doc_ids)
-        qrels_doc_ids = set(item['id'] for item in qrels)
-        print("Intersection of doc_ids and qrels:", len(doc_ids_set & qrels_doc_ids))
-		rank = 20
+        rank=20
         precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
-        for k in range(1, 11):
-            precision = self.evaluator.meanPrecision(doc_IDs_ordered, query_ids, qrels, k)
+        for k in range(1, rank+1):
+            precision = self.evaluator.meanPrecision(
+				doc_IDs_ordered, query_ids, qrels, k)
             precisions.append(precision)
-            recall = self.evaluator.meanRecall(doc_IDs_ordered, query_ids, qrels, k)
+            recall = self.evaluator.meanRecall(
+				doc_IDs_ordered, query_ids, qrels, k)
             recalls.append(recall)
-            fscore = self.evaluator.meanFscore(doc_IDs_ordered, query_ids, qrels, k)
+            fscore = self.evaluator.meanFscore(
+				doc_IDs_ordered, query_ids, qrels, k)
             fscores.append(fscore)
-            print(f"Precision, Recall and F-score @ {k} : {precision}, {recall}, {fscore}")
-            MAP = self.evaluator.meanAveragePrecision(doc_IDs_ordered, query_ids, qrels, k)
+            print("Precision, Recall and F-score @ " +  
+				str(k) + " : " + str(precision) + ", " + str(recall) + 
+				", " + str(fscore))
+            MAP = self.evaluator.meanAveragePrecision(
+				doc_IDs_ordered, query_ids, qrels, k)
             MAPs.append(MAP)
-            nDCG = self.evaluator.meanNDCG(doc_IDs_ordered, query_ids, qrels, k)
+            nDCG = self.evaluator.meanNDCG(
+				doc_IDs_ordered, query_ids, qrels, k)
             nDCGs.append(nDCG)
-            print(f"MAP, nDCG @ {k} : {MAP}, {nDCG}")
+            print("MAP, nDCG @ " +  
+				str(k) + " : " + str(MAP) + ", " + str(nDCG))
 
+        # Plot the metrics and save plot 
         plt.plot(range(1, rank+1), precisions, label="Precision")
         plt.plot(range(1, rank+1), recalls, label="Recall")
         plt.plot(range(1, rank+1), fscores, label="F-Score")
@@ -130,22 +131,36 @@ class SearchEngine:
         plt.legend()
         plt.title("Evaluation Metrics - Cranfield Dataset")
         plt.xlabel("k")
-        plt.savefig(self.args.out_folder + "eval_plot.png")
+        plt.savefig(args.out_folder + "eval_plot.png")
 
+		
     def handleCustomQuery(self):
+        """
+        Take a custom query as input and return top five relevant documents
+        """
+
+        # Get query
         print("Enter query below")
         query = input()
         custom_start_time = time.time()
-		query = self.autocomplete.complete(query)
+        # Process documents
+        query = self.autocomplete.complete(query)
         processedQuery = self.preprocessQueries([query])[0]
-        docs_json = json.load(open(self.args.dataset + "cran_docs.json", 'r'))[:]
-        doc_ids = [str(item["id"]) for item in docs_json]  # Ensure string IDs
-        docs = [item["body"] for item in docs_json]
+
+        # Read documents
+        docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
+        doc_ids, docs = [item["id"] for item in docs_json], \
+                        [item["body"] for item in docs_json]
+        # Process documents
         processedDocs = self.preprocessDocs(docs)
+
+        # Build document index
         self.informationRetriever.buildIndex(processedDocs, doc_ids)
+        # Rank the documents for the query
         doc_IDs_ordered = self.informationRetriever.rank([processedQuery])[0]
         custom_end_time = time.time()
         print("Custom Query Time taken : " + str(custom_end_time - custom_start_time) + " seconds")
+        # Print the IDs of first five documents
         print("\nTop five document IDs : ")
         for id_ in doc_IDs_ordered[:5]:
             print(id_)
