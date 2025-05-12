@@ -144,23 +144,12 @@ class SearchEngine:
         query_ids = [str(item["query number"]) for item in queries_json]  # Ensure string IDs
         queries = [item["query"] for item in queries_json]
         processedQueries = self.preprocessQueries(queries)
-    def evaluateDataset(self):
-        queries_json = json.load(open(self.args.dataset + "cran_queries.json", 'r'))[:]
-        query_ids = [str(item["query number"]) for item in queries_json]  # Ensure string IDs
-        queries = [item["query"] for item in queries_json]
-        processedQueries = self.preprocessQueries(queries)
 
         docs_json = json.load(open(self.args.dataset + "cran_docs.json", 'r'))[:]
         doc_ids = [str(item["id"]) for item in docs_json]  # Ensure string IDs
         docs = [item["body"] for item in docs_json]
         processedDocs = self.preprocessDocs(docs)
-        docs_json = json.load(open(self.args.dataset + "cran_docs.json", 'r'))[:]
-        doc_ids = [str(item["id"]) for item in docs_json]  # Ensure string IDs
-        docs = [item["body"] for item in docs_json]
-        processedDocs = self.preprocessDocs(docs)
 
-        self.informationRetriever.buildIndex(processedDocs, doc_ids)
-        doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
         self.informationRetriever.buildIndex(processedDocs, doc_ids)
         doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
 
@@ -169,38 +158,22 @@ class SearchEngine:
         precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
         for k in range(1, rank+1):
             precision = self.evaluator.meanPrecision(
-        qrels = json.load(open(self.args.dataset + "cran_qrels.json", 'r'))[:]
-        rank=20
-        precisions, recalls, fscores, MAPs, nDCGs = [], [], [], [], []
-        for k in range(1, rank+1):
-            precision = self.evaluator.meanPrecision(
 				doc_IDs_ordered, query_ids, qrels, k)
-            precisions.append(precision)
-            recall = self.evaluator.meanRecall(
             precisions.append(precision)
             recall = self.evaluator.meanRecall(
 				doc_IDs_ordered, query_ids, qrels, k)
             recalls.append(recall)
             fscore = self.evaluator.meanFscore(
-            recalls.append(recall)
-            fscore = self.evaluator.meanFscore(
 				doc_IDs_ordered, query_ids, qrels, k)
-            fscores.append(fscore)
-            print("Precision, Recall and F-score @ " +  
             fscores.append(fscore)
             print("Precision, Recall and F-score @ " +  
 				str(k) + " : " + str(precision) + ", " + str(recall) + 
 				", " + str(fscore))
             MAP = self.evaluator.meanAveragePrecision(
-            MAP = self.evaluator.meanAveragePrecision(
 				doc_IDs_ordered, query_ids, qrels, k)
             MAPs.append(MAP)
             nDCG = self.evaluator.meanNDCG(
-            MAPs.append(MAP)
-            nDCG = self.evaluator.meanNDCG(
 				doc_IDs_ordered, query_ids, qrels, k)
-            nDCGs.append(nDCG)
-            print("MAP, nDCG @ " +  
             nDCGs.append(nDCG)
             print("MAP, nDCG @ " +  
 				str(k) + " : " + str(MAP) + ", " + str(nDCG))
@@ -215,22 +188,7 @@ class SearchEngine:
         plt.title("Evaluation Metrics - Cranfield Dataset")
         plt.xlabel("k")
         plt.savefig(args.out_folder + "eval_plot.png")
-        # Plot the metrics and save plot 
-        plt.plot(range(1, rank+1), precisions, label="Precision")
-        plt.plot(range(1, rank+1), recalls, label="Recall")
-        plt.plot(range(1, rank+1), fscores, label="F-Score")
-        plt.plot(range(1, rank+1), MAPs, label="MAP")
-        plt.plot(range(1, rank+1), nDCGs, label="nDCG")
-        plt.legend()
-        plt.title("Evaluation Metrics - Cranfield Dataset")
-        plt.xlabel("k")
-        plt.savefig(args.out_folder + "eval_plot.png")
 
-		
-    def handleCustomQuery(self):
-        """
-        Take a custom query as input and return top five relevant documents
-        """
     def handleCustomQuery(self):
         """
         Take a custom query as input and return top five relevant documents
@@ -313,6 +271,13 @@ if __name__ == "__main__":
 						help = "Use document expansion")
 	parser.add_argument('-custom', action = "store_true", 
 						help = "Take custom query as input")
+	parser.add_argument('-include_bigrams', action="store_true",
+						help="Include bigrams in the TF-IDF model")
+	parser.add_argument('-autocomplete',default= "Ngram", choices=['Ngram', 'tries'], 
+						help="Autocomplete Queries")
+	parser.add_argument('-Ngram',default=3, choices=[2,3,4,5], 
+						help="Ngram Model type")
+	
 	parser.add_argument('-include_bigrams', action="store_true",
 						help="Include bigrams in the TF-IDF model")
 	parser.add_argument('-autocomplete',default= "Ngram", choices=['Ngram', 'tries'], 
